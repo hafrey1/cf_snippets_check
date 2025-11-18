@@ -1,6 +1,6 @@
 # Cloudflare Snippets Status Checker
 
-该仓库用于自动检查你的 Cloudflare 账户下所有域名的 **Snippets 可用情况**，并生成一个 Markdown 表格 `snippets_status.md`，每天自动更新。
+该仓库用于自动检查 Cloudflare 账户下所有域名的 **Snippets 可用情况**，并生成一个 Markdown 表格 `snippets_status.md`，每天自动更新。
 
 ---
 
