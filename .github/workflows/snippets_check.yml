@@ -1,31 +1,73 @@
-ZONES=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?per_page=50" \
-  -H "Authorization: Bearer $CF_API_TOKEN" \
-  -H "Content-Type: application/json")
+name: Cloudflare Snippets Full Auto Check
 
-# 检查是否有域名
-COUNT=$(echo "$ZONES" | jq '.result | length')
-if [ "$COUNT" -eq 0 ]; then
-  echo "No zones found. Please check your API token and permissions."
-  exit 1
-fi
+on:
+  schedule:
+    - cron: '0 12 * * *'  # 每天中午12点执行
+  workflow_dispatch:
 
-# 遍历域名
-echo "$ZONES" | jq -c '.result[] | {id: .id, name: .name}' | while read -r zone; do
-  DOMAIN=$(echo "$zone" | jq -r '.name')
-  ZONE_ID=$(echo "$zone" | jq -r '.id')
+jobs:
+  check_snippets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-  RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/rulesets/capabilities" \
-    -H "Authorization: Bearer $CF_API_TOKEN" \
-    -H "Content-Type: application/json")
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq git
 
-  SNIPPETS_COUNT=$(echo "$RESPONSE" | jq -r '.result[] | select(.id=="rulesets.snippets_rule_max") | .value')
+      - name: Generate Snippets Status
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          echo "| Domain | Zone ID | Snippets Available | Max Snippets |" > snippets_status.md
+          echo "|--------|---------|-----------------|--------------|" >> snippets_status.md
 
-  if [ -n "$SNIPPETS_COUNT" ]; then
-    AVAILABLE="✅"
-  else
-    AVAILABLE="❌"
-    SNIPPETS_COUNT="-"
-  fi
+          PAGE=1
+          PER_PAGE=50
 
-  echo "| $DOMAIN | $ZONE_ID | $AVAILABLE | $SNIPPETS_COUNT |" >> snippets_status.md
-done
+          while :; do
+            ZONES=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?per_page=$PER_PAGE&page=$PAGE" \
+              -H "Authorization: Bearer $CF_API_TOKEN" \
+              -H "Content-Type: application/json")
+
+            COUNT=$(echo "$ZONES" | jq '.result | length')
+            if [ "$COUNT" -eq 0 ]; then
+              break
+            fi
+
+            echo "$ZONES" | jq -c '.result[] | {id: .id, name: .name}' | while read -r zone; do
+              DOMAIN=$(echo "$zone" | jq -r '.name')
+              ZONE_ID=$(echo "$zone" | jq -r '.id')
+
+              RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/rulesets/capabilities" \
+                -H "Authorization: Bearer $CF_API_TOKEN" \
+                -H "Content-Type: application/json")
+
+              SNIPPETS_COUNT=$(echo "$RESPONSE" | jq -r '.result[] | select(.id=="rulesets.snippets_rule_max") | .value')
+
+              if [ -n "$SNIPPETS_COUNT" ]; then
+                AVAILABLE="✅"
+              else
+                AVAILABLE="❌"
+                SNIPPETS_COUNT="-"
+              fi
+
+              echo "| $DOMAIN | $ZONE_ID | $AVAILABLE | $SNIPPETS_COUNT |" >> snippets_status.md
+            done
+
+            # 如果返回的数量小于每页数量，说明最后一页
+            if [ "$COUNT" -lt "$PER_PAGE" ]; then
+              break
+            fi
+            PAGE=$((PAGE + 1))
+          done
+
+      - name: Commit and Push results
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add snippets_status.md
+          git commit -m "Update Cloudflare Snippets status [skip ci]" || echo "No changes to commit"
+          git push
