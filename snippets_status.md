@@ -1,5 +1,5 @@
-| Domain | Zone ID | Snippets Available | Max Snippets |
-|--------|---------|-----------------|--------------|
+| Domain | Snippets Available | Max Snippets |
+|--------|-----------------|--------------|
 | j88.qzz.io | 03645d1641e706f056a322a62d17f2c0 | ✅ | Unlimited |
 | 发发发.netlib.re | 1a7afac17506d1eba79eb380a2916324 | ✅ | Unlimited |
 | 168188.dpdns.org | 44833ae314d28e02afe08864833b7ce3 | ✅ | Unlimited |
