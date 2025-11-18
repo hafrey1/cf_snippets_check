@@ -41,6 +41,12 @@
 
    - 运行后会在仓库根目录生成 `snippets_status.md`
    - 包含所有域名的 Snippets 可用状态和最大数量
+  
+   {
+  "id": "rulesets.snippets_rule_max",
+  "value": 100
+}
+
 
 ---
 
