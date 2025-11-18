@@ -15,7 +15,7 @@
 
 示例表格：(根据Max Snippets的数量判断是否可用)
 
-| Domain       | Zone ID | Snippets Available | Max Snippets |
+| 域名    | Zone ID | Snippets 状态 | Max Snippets 数量 |
 |--------------|---------|-----------------|--------------|
 | example.com  | abc123  | ❌              | N/A          |
 | mysite.net   | def456  | ✅              | 5            |
